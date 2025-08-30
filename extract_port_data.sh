@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Define input path
-input_dir="/home/jpadavatan/lustre/ccam_install_20240215/src/run_ACCESS_8km_saws/post_points/benjy"
+input_dir="/home/jpadavatan/lustre/ccam_install_20240215/src/run_ACCESS_8km_saws/post_points/marius"
 
-# Define variables to process
+# Define variables to process (based on file prefixes)
 variables=("u10" "d10")
 
 # Define locations with coordinates (lon/lat)
@@ -19,18 +19,22 @@ locations["richards"]="32.12997/-28.908597"
 # Process each variable
 for var in "${variables[@]}"; do
     echo "Processing $var files..."
-    var_ports_dir="$input_dir/$var/ports"
+    var_ports_dir="$input_dir/ports_${var}"
     [ ! -d "$var_ports_dir" ] && mkdir -p "$var_ports_dir"
     
-    for file in "$input_dir"/$var/*.nc; do
-        filename=$(basename "$file")
-        
-        # Extract for each location
-        for city in "${!locations[@]}"; do
-            outfile="${filename%.nc}_${city}.nc"
-            echo "Extracting $city from $filename"
-            cdo remapnn,lon=${locations[$city]%/*}/lat=${locations[$city]#*/} "$file" "${var_ports_dir}/${outfile}"
-        done
+    # Find files that start with the variable prefix
+    for file in "$input_dir"/${var}_*.nc; do
+        # Check if file exists (in case no files match the pattern)
+        if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            
+            # Extract for each location
+            for city in "${!locations[@]}"; do
+                outfile="${filename%.nc}_${city}.nc"
+                echo "Extracting $city from $filename"
+                cdo remapnn,lon=${locations[$city]%/*}/lat=${locations[$city]#*/} "$file" "${var_ports_dir}/${outfile}"
+            done
+        fi
     done
     
     echo "$var port data saved to: $var_ports_dir"
