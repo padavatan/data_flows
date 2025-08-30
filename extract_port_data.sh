@@ -3,6 +3,9 @@
 # Define input path
 input_dir="/home/jpadavatan/lustre/ccam_install_20240215/src/run_ACCESS_8km_saws/post_points/benjy"
 
+# Define variables to process
+variables=("u10" "d10")
+
 # Define locations with coordinates (lon/lat)
 declare -A locations
 locations["saldanha"]="17.918068/-33.084923"
@@ -13,38 +16,25 @@ locations["eastlondon"]="27.950933/-33.060892"
 locations["durban"]="31.118288/-29.874164"
 locations["richards"]="32.12997/-28.908597"
 
-# Process u10 files
-echo "Processing u10 files..."
-u10_ports_dir="$input_dir/u10/ports"
-[ ! -d "$u10_ports_dir" ] && mkdir -p "$u10_ports_dir"
-
-for file in "$input_dir"/u10/*.nc; do
-    filename=$(basename "$file")
+# Process each variable
+for var in "${variables[@]}"; do
+    echo "Processing $var files..."
+    var_ports_dir="$input_dir/$var/ports"
+    [ ! -d "$var_ports_dir" ] && mkdir -p "$var_ports_dir"
     
-    # Extract for each location
-    for city in "${!locations[@]}"; do
-        outfile1="${filename%.nc}_${city}.nc"
-        echo "Extracting $city from $filename"
-        cdo remapnn,lon=${locations[$city]%/*}/lat=${locations[$city]#*/} "$file" "${u10_ports_dir}/${outfile1}"
+    for file in "$input_dir"/$var/*.nc; do
+        filename=$(basename "$file")
+        
+        # Extract for each location
+        for city in "${!locations[@]}"; do
+            outfile="${filename%.nc}_${city}.nc"
+            echo "Extracting $city from $filename"
+            cdo remapnn,lon=${locations[$city]%/*}/lat=${locations[$city]#*/} "$file" "${var_ports_dir}/${outfile}"
+        done
     done
-done
-
-# Process d10 files  
-echo "Processing d10 files..."
-d10_ports_dir="$input_dir/d10/ports"
-[ ! -d "$d10_ports_dir" ] && mkdir -p "$d10_ports_dir"
-
-for file in "$input_dir"/d10/*.nc; do
-    filename=$(basename "$file")
     
-    # Extract for each location
-    for city in "${!locations[@]}"; do
-        outfile1="${filename%.nc}_${city}.nc"
-        echo "Extracting $city from $filename"
-        cdo remapnn,lon=${locations[$city]%/*}/lat=${locations[$city]#*/} "$file" "${d10_ports_dir}/${outfile1}"
-    done
+    echo "$var port data saved to: $var_ports_dir"
 done
 
 echo "Done!"
-echo "U10 port data saved to: $u10_ports_dir"
-echo "D10 port data saved to: $d10_ports_dir"
+echo "All variables processed successfully!"
